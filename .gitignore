@@ -1,0 +1,26 @@
+# Real / sensitive databases
+attendance.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+*.secret
+secrets.*
+*.pem
+*.key
+
+# Keep the safe demo database
+!attendance_sample.db
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
