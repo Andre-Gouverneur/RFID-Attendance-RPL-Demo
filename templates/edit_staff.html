@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Staff - {{ staff.name }}{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h1 class="mb-4">Edit Staff Member</h1>
+        <form action="{{ url_for('edit_staff', staff_id=staff.id) }}" method="post">
+            <div class="form-group">
+                <label for="name">Name:</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ staff.name }}" required>
+            </div>
+            <div class="form-group">
+                <label for="rfid_uid">RFID UID:</label>
+                <input type="text" class="form-control" id="rfid_uid" name="rfid_uid" value="{{ staff.rfid_uid }}" required>
+            </div>
+            <div class="form-group">
+                <label for="shift_id">Shift:</label>
+                <div class="d-flex flex-wrap gap-3">
+                    {% for shift in all_shifts %}
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="shift_id" id="shift_{{ shift.id }}" value="{{ shift.id }}" {% if staff.shift_id == shift.id %}checked{% endif %}>
+                        <label class="form-check-label" for="shift_{{ shift.id }}">{{ shift.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if staff.is_active %}checked{% endif %}>
+                <label class="form-check-label" for="is_active">Active Status</label>
+            </div>
+
+            <div class="form-group">
+                <label for="current_status">Current Status:</label>
+                <div class="d-flex flex-wrap gap-3">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="staff_status" id="statusIn" value="IN" {% if staff.current_status == 'IN' %}checked{% endif %}>
+                        <label class="form-check-label" for="statusIn">IN</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="staff_status" id="statusOut" value="OUT" {% if staff.current_status == 'OUT' %}checked{% endif %}>
+                        <label class="form-check-label" for="statusOut">OUT</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="staff_status" id="statusOnLeave" value="ON_LEAVE" {% if staff.current_status == 'ON_LEAVE' %}checked{% endif %}>
+                        <label class="form-check-label" for="statusOnLeave">ON_LEAVE</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="staff_status" id="statusOnLunch" value="ON_LUNCH" {% if staff.current_status == 'ON_LUNCH' %}checked{% endif %}>
+                        <label class="form-check-label" for="statusOnLunch">ON_LUNCH</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group" id="manualOutComment" style="display: none;">
+                <label for="comment">Reason for manual change:</label>
+                <textarea class="form-control" id="comment" name="comment" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="leave_type">Leave Type:</label>
+                <div class="d-flex flex-wrap gap-3">
+                    {% for leave_type in leave_types %}
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="leave_type" id="leaveType_{{ leave_type.id }}" value="{{ leave_type.id }}" {% if staff.leave_type_id == leave_type.id %}checked{% endif %}>
+                        <label class="form-check-label" for="leaveType_{{ leave_type.id }}">{{ leave_type.name }}</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">Cancel</a>
+        </form>
+    </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusRadios = document.querySelectorAll('input[name="staff_status"]');
+        const commentSection = document.getElementById('manualOutComment');
+
+        function toggleCommentSection() {
+            // Check if the "OUT" radio button is checked
+            const outStatus = document.getElementById('statusOut');
+            if (outStatus.checked) {
+                commentSection.style.display = 'block';
+            } else {
+                commentSection.style.display = 'none';
+            }
+        }
+
+        // Add an event listener to each radio button
+        statusRadios.forEach(radio => {
+            radio.addEventListener('change', toggleCommentSection);
+        });
+
+        // Run on page load to set the initial state
+        toggleCommentSection();
+    });
+</script>
+
+{# JavaScript for conditional dropdown and Clear RFID button #}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- For Current Status and Leave Type ---
+        const currentStatusSelect = document.getElementById('current_status');
+        const currentLeaveTypeGroup = document.getElementById('currentLeaveTypeGroup');
+
+        function toggleCurrentLeaveType() {
+            if (currentStatusSelect.value === 'ON_LEAVE') {
+                currentLeaveTypeGroup.style.display = 'block';
+            } else {
+                currentLeaveTypeGroup.style.display = 'none';
+            }
+        }
+
+        currentStatusSelect.addEventListener('change', toggleCurrentLeaveType);
+        toggleCurrentLeaveType(); // Call on load to set initial state
+
+        // --- For Clear RFID UID Button ---
+        const clearRfidUidButton = document.getElementById('clearRfidUidButton');
+        const rfidUidInput = document.getElementById('rfid_uid');
+
+        if (clearRfidUidButton) {
+            clearRfidUidButton.addEventListener('click', function() {
+                rfidUidInput.value = ''; // Set the input value to empty
+            });
+        }
+    });
+</script>
+{% endblock %}

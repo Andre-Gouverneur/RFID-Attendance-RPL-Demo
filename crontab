@@ -1,0 +1,10 @@
+# crontab
+# Check for absences at 8:00 AM every weekday (Mon-Fri)
+0 8 * * * root /usr/local/bin/python /app/automatic_absence_checker.py >> /proc/1/fd/1 2>> /proc/1/fd/2
+
+# Auto-checkout at 17:00 (5:00 PM) every day
+0 17 * * * root /usr/local/bin/python /app/scheduler_jobs.py >> /proc/1/fd/1 2>> /proc/1/fd/2
+
+* * * * * echo "Cron job test" >> /app/cron_test.log
+
+# Add a blank line at the end of the file

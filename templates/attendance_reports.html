@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance Report{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Attendance Summary for Today</h2>
+    <!-- Corrected layout for equal-sized info boxes -->
+    <div class="row text-center mb-4 d-flex justify-content-around">
+        <div class="col-md-auto">
+            <div class="card bg-light shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Total Staff</h5>
+                    <p class="card-text fs-4">{{ total_staff }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-auto">
+            <div class="card bg-success text-white shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Present</h5>
+                    <p class="card-text fs-4">{{ present_staff_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-auto">
+            <div class="card bg-warning text-white shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">On Lunch</h5>
+                    <p class="card-text fs-4">{{ on_lunch_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-auto">
+            <div class="card bg-danger text-white shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Absent</h5>
+                    <p class="card-text fs-4">{{ absent_staff_count }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-auto">
+            <div class="card bg-info text-white shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">On Leave</h5>
+                    <p class="card-text fs-4">{{ on_leave_count }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <hr>
+
+    <h2 class="mb-3">Detailed Attendance Report</h2>
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Employee Name</th>
+                    <th>Status</th>
+                    <th>Check-in</th>
+                    <th>Check-out</th>
+                    <th>Total Hours</th>
+                    <th>Comments</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for report in reports %}
+                <tr>
+                    <td>{{ report.staff.name }}</td>
+                    <td>
+                        <span class="badge bg-{{ 'success' if report.status in ('IN', 'Lunch_in') else 'danger' if report.status in ('OUT', 'Not Scanned') else 'info' }}">
+                            {{ report.status }}
+                        </span>
+                    </td>
+                    <td>{{ report.check_in_time if report.check_in_time else 'N/A' }}</td>
+                    <td>{{ report.check_out_time if report.check_out_time else 'N/A' }}</td>
+                    <td>{{ report.total_hours }}</td>
+                    <td>
+                        {% if report.comment %}
+                            <p class="text-muted">{{ report.comment }}</p>
+                        {% elif report.check_in_time and report.check_in_time > time(8, 0) %}
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#commentModal" data-attendance-id="{{ report.id }}" data-staff-name="{{ report.staff.name }}">
+                                Add Comment
+                            </button>
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('attendance_reports', page=pagination.prev_num) }}">Previous</a></li>
+            {% endif %}
+
+            {% for page_num in pagination.iter_pages() %}
+                {% if page_num %}
+                    {% if page_num != pagination.page %}
+                    <li class="page-item"><a class="page-link" href="{{ url_for('attendance_reports', page=page_num) }}">{{ page_num }}</a></li>
+                    {% else %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ page_num }}</a></li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+            <li class="page-item"><a class="page-link" href="{{ url_for('attendance_reports', page=pagination.next_num) }}">Next</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <hr>
+
+    <h3 class="mb-3">Public Holidays</h3>
+    <ul class="list-group">
+        {% for holiday_date, holiday_name in public_holidays %}
+        <li class="list-group-item">{{ holiday_date.strftime('%Y-%m-%d') }}: {{ holiday_name }}</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="modal fade" id="commentModal" tabindex="-1" aria-labelledby="commentModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="commentModalLabel">Add Comment for <span id="staffName"></span></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('add_comment') }}">
+          <div class="modal-body">
+            <input type="hidden" name="attendance_id" id="attendanceId">
+            <div class="mb-3">
+              <label for="comment-text" class="col-form-label">Comment:</label>
+              <textarea class="form-control" id="comment-text" name="comment" required></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary">Save Comment</button>
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+    var commentModal = document.getElementById('commentModal')
+    commentModal.addEventListener('show.bs.modal', function (event) {
+        // Get the button that triggered the modal
+        var button = event.relatedTarget
+
+        // Extract the data attributes from the button
+        var attendanceId = button.dataset.attendanceId
+        var staffName = button.dataset.staffName
+
+        // Find the elements inside the modal
+        var modalTitleSpan = commentModal.querySelector('.modal-title #staffName')
+        var modalAttendanceInput = commentModal.querySelector('#attendanceId')
+        
+        // Set the values on the modal elements
+        modalTitleSpan.textContent = staffName
+        modalAttendanceInput.value = attendanceId
+    })
+</script>
+
+{% endblock %}

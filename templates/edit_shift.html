@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Shift - RFID Attendance{% endblock %} {# Or use the dynamic one: Edit Shift - {{ shift.name }} #}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Edit Shift</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Edit Shift Details for "{{ shift.name }}"</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label for="name" class="form-label">Shift Name</label>
+                        <input type="text" class="form-control" id="name" name="name" value="{{ shift.name }}" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="start_time" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="start_time" name="start_time" value="{{ shift.start_time.strftime('%H:%M') if shift.start_time else '' }}" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="end_time" class="form-label">End Time</label>
+                        <input type="time" class="form-control" id="end_time" name="end_time" value="{{ shift.end_time.strftime('%H:%M') if shift.end_time else '' }}" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="grace_period_minutes" class="form-label">Grace Period (min)</label>
+                        <input type="number" class="form-control" id="grace_period_minutes" name="grace_period_minutes" value="{{ shift.grace_period_minutes }}" min="0">
+                    </div>
+                    <div class="col-md-3"> {# Changed from md-2 to md-3 for consistency #}
+                        <label for="break_duration_minutes" class="form-label">Break Duration (min)</label>
+                        <input type="number" class="form-control" id="break_duration_minutes" name="break_duration_minutes" value="{{ shift.break_duration_minutes }}" min="0">
+                    </div>
+
+                    <div class="col-md-12 mt-3">
+                        <label class="form-label">Days of Week</label><br>
+                        {% set current_days = shift.days_of_week.split(',') if shift.days_of_week else [] %}
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="edit_monday" name="days_of_week" value="Mon" {% if 'Mon' in current_days %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_monday">Monday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="edit_tuesday" name="days_of_week" value="Tue" {% if 'Tue' in current_days %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_tuesday">Tuesday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="edit_wednesday" name="days_of_week" value="Wed" {% if 'Wed' in current_days %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_wednesday">Wednesday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="edit_thursday" name="days_of_week" value="Thu" {% if 'Thu' in current_days %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_thursday">Thursday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="edit_friday" name="days_of_week" value="Fri" {% if 'Fri' in current_days %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_friday">Friday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="edit_saturday" name="days_of_week" value="Sat" {% if 'Sat' in current_days %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_saturday">Saturday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="edit_sunday" name="days_of_week" value="Sun" {% if 'Sun' in current_days %}checked{% endif %}>
+                            <label class="form-check-label" for="edit_sunday">Sunday</label>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-3">
+                        <button type="submit" class="btn btn-primary">Update Shift</button>
+                        <a href="{{ url_for('manage_shifts') }}" class="btn btn-secondary">Cancel</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Shifts - RFID Attendance{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Manage Shifts</h1>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Add New Shift</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('manage_shifts') }}">
+                <div class="row g-3">
+                    {# --- MISSING FIELDS RE-ADDED HERE --- #}
+                    <div class="col-md-3">
+                        <label for="name" class="form-label">Shift Name</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="start_time" class="form-label">Start Time</label>
+                        <input type="time" class="form-control" id="start_time" name="start_time" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="end_time" class="form-label">End Time</label>
+                        <input type="time" class="form-control" id="end_time" name="end_time" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="grace_period_minutes" class="form-label">Grace Period (min)</label>
+                        <input type="number" class="form-control" id="grace_period_minutes" name="grace_period_minutes" value="5" min="0">
+                    </div>
+                    {# --- END MISSING FIELDS RE-ADDED --- #}
+
+                    <div class="col-md-3"> {# Changed from md-2 to md-3 to accommodate layout #}
+                        <label for="break_duration_minutes" class="form-label">Break Duration (min)</label>
+                        <input type="number" class="form-control" id="break_duration_minutes" name="break_duration_minutes" value="60" min="0">
+                    </div>
+
+                    <div class="col-md-12 mt-3"> {# This will make the days take up the full row width #}
+                        <label class="form-label">Days of Week</label><br>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="monday" name="days_of_week" value="Mon" checked>
+                            <label class="form-check-label" for="monday">Monday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="tuesday" name="days_of_week" value="Tue" checked>
+                            <label class="form-check-label" for="tuesday">Tuesday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="wednesday" name="days_of_week" value="Wed" checked>
+                            <label class="form-check-label" for="wednesday">Wednesday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="thursday" name="days_of_week" value="Thu" checked>
+                            <label class="form-check-label" for="thursday">Thursday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="friday" name="days_of_week" value="Fri" checked>
+                            <label class="form-check-label" for="friday">Friday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="saturday" name="days_of_week" value="Sat">
+                            <label class="form-check-label" for="saturday">Saturday</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input class="form-check-input" type="checkbox" id="sunday" name="days_of_week" value="Sun">
+                            <label class="form-check-label" for="sunday">Sunday</label>
+                        </div>
+                    </div>
+
+                    <div class="col-md-12 d-flex justify-content-end mt-3"> {# Button is now in its own full-width div #}
+                        <button type="submit" class="btn btn-success">Add Shift</button>
+                    </div>
+                    {# The duplicate button and its div below were removed #}
+                </div> {# Closes the form row div #}
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Existing Shifts</h4>
+        </div>
+        <div class="card-body">
+            {% if shifts %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Grace Period</th>
+                            <th>Break Duration</th>
+                            <th>Days</th> {# NEW TABLE HEADER - ADDED THIS BACK #}
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shift in shifts %}
+                        <tr>
+                            <td>{{ shift.name }}</td>
+                            <td>{{ shift.start_time.strftime('%H:%M') }}</td>
+                            <td>{{ shift.end_time.strftime('%H:%M') }}</td>
+                            <td>{{ shift.grace_period_minutes }} min</td>
+                            <td>{{ shift.break_duration_minutes }} min</td>
+                            <td>{{ shift.days_of_week }}</td> {# NEW TABLE DATA - ADDED THIS BACK #}
+                            <td>
+                                <a href="{{ url_for('edit_shift', shift_id=shift.id) }}" class="btn btn-sm btn-warning">Edit</a>
+                                <form action="{{ url_for('delete_shift', shift_id=shift.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this shift?');">
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="alert alert-info mb-0">No shifts defined yet. Add one above!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

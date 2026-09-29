@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Attendance Reports{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4 text-center">Attendance Reports</h2>
+
+    <form method="POST" class="mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="filter_date" class="form-label">Select Date:</label>
+                <input type="date" class="form-control" id="filter_date" name="filter_date" value="{{ selected_date if selected_date else now.strftime('%Y-%m-%d') }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label d-block">Filter By:</label>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="filter_type" id="filterTypeMonth" value="month" {% if selected_filter_type == 'month' %}checked{% endif %}>
+                    <label class="form-check-label" for="filterTypeMonth">Month</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="filter_type" id="filterTypeWeek" value="week" {% if selected_filter_type == 'week' %}checked{% endif %}>
+                    <label class="form-check-label" for="filterTypeWeek">Week</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="filter_type" id="filterTypeDay" value="day" {% if selected_filter_type == 'day' %}checked{% endif %}>
+                    <label class="form-check-label" for="filterTypeDay">Day</label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="radio" name="filter_type" id="filterTypeAll" value="all" {% if not selected_filter_type or selected_filter_type == 'all' %}checked{% endif %}>
+                    <label class="form-check-label" for="filterTypeAll">All</label>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label for="staff_filter" class="form-label">Staff Member:</label>
+                <select class="form-select" id="staff_filter" name="staff_filter">
+                    <option value="all">All Staff</option>
+                    {% for staff in staff_list %}
+                    <option value="{{ staff.id }}" {% if selected_staff_id and selected_staff_id|string == staff.id|string %}selected{% endif %}>{{ staff.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary w-100">Apply Filter</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="mb-3">
+        <form action="{{ url_for('export_report') }}" method="GET" class="d-inline-block">
+            <input type="hidden" name="filter_date" value="{{ selected_date if selected_date else '' }}">
+            <input type="hidden" name="filter_type" value="{{ selected_filter_type if selected_filter_type else '' }}">
+            <input type="hidden" name="staff_filter" value="{{ selected_staff_id if selected_staff_id else '' }}">
+            <button type="submit" class="btn btn-success">Export to Excel</button>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-bordered table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>RFID UID</th>
+                    <th>Timestamp</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>{{ record.related_staff.id }}</td>
+                    <td>{{ record.related_staff.name }}</td>
+                    <td>{{ record.related_staff.rfid_uid }}</td>
+                    <td>
+                        {{ record.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}
+                        {# --- NEW: Display holiday name if this record's date is a holiday --- #}
+                        {% if record.timestamp.date() in holidays_in_period %}
+                        <br><span class="badge bg-info ms-2" title="{{ holidays_in_period[record.timestamp.date()] }} (Public Holiday)">
+                            <i class="fas fa-star"></i> {{ holidays_in_period[record.timestamp.date()] }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if record.action_type == 'IN' %}
+                            <span class="badge bg-success">IN</span>
+                        {% elif record.action_type == 'OUT' %}
+                            <span class="badge bg-danger">OUT</span>
+                        {% elif record.action_type == 'UNKNOWN' %}
+                            <span class="badge bg-secondary">UNKNOWN TAG</span>
+                        {% elif record.action_type == 'DENIED' %}
+                            <span class="badge bg-warning text-dark">DENIED</span>
+                        {% elif record.action_type == 'DENIED_ON_LEAVE' %}
+                            <span class="badge bg-info text-dark">DENIED (ON LEAVE)</span>
+                        {% elif record.action_type == 'ERROR' %}
+                            <span class="badge bg-danger">ERROR</span>
+                        {% else %}
+                            <span class="badge bg-primary">{{ record.action_type }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {# --- START PAGINATION CODE FOR ATTENDANCE REPORTS --- #}
+    {% if attendance_logs_pagination.pages > 1 %}
+    <nav aria-label="Reports Page navigation">
+        <ul class="pagination justify-content-center mt-3">
+            {# Previous Button #}
+            <li class="page-item {% if not attendance_logs_pagination.has_prev %}disabled{% endif %}">
+                <a class="page-link"
+                   href="{{ url_for('attendance_reports',
+                                     page=attendance_logs_pagination.prev_num,
+                                     filter_date=selected_date,
+                                     filter_type=selected_filter_type,
+                                     staff_filter=selected_staff_id) }}" {# Pass filter parameters #}
+                   aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+
+            {# Page Numbers #}
+            {% for page_num in attendance_logs_pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if attendance_logs_pagination.page == page_num %}
+                    <li class="page-item active" aria-current="page"><a class="page-link" href="#">{{ page_num }}</a></li>
+                    {% else %}
+                    <li class="page-item"><a class="page-link"
+                               href="{{ url_for('attendance_reports',
+                                                 page=page_num,
+                                                 filter_date=selected_date,
+                                                 filter_type=selected_filter_type,
+                                                 staff_filter=selected_staff_id) }}"> {# Pass filter parameters #}
+                               {{ page_num }}</a></li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled"><a class="page-link" href="#">...</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {# Next Button #}
+            <li class="page-item {% if not attendance_logs_pagination.has_next %}disabled{% endif %}">
+                <a class="page-link"
+                   href="{{ url_for('attendance_reports',
+                                     page=attendance_logs_pagination.next_num,
+                                     filter_date=selected_date,
+                                     filter_type=selected_filter_type,
+                                     staff_filter=selected_staff_id) }}" {# Pass filter parameters #}
+                   aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+    {# --- END PAGINATION CODE FOR ATTENDANCE REPORTS --- #}
+
+    {% if not records %}
+    <p class="text-center text-muted">No attendance records found with current filters.</p>
+    {% endif %}
+</div>
+{% endblock %}

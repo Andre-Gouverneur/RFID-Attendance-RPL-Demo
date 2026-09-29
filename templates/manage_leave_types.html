@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Leave Types{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Manage Leave Types</h1>
+    
+    <div class="card shadow-sm mb-4">
+        <div class="card-header">Add New Leave Type</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('manage_leave_types') }}">
+                {{ form.hidden_tag() }}
+                <div class="mb-3">
+                    {{ form.name.label(class="form-label") }}
+                    {{ form.name(class="form-control", placeholder="e.g., Sick Leave") }}
+                    {% for error in form.name.errors %}
+                        <div class="alert alert-danger mt-1">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {{ form.submit(class="btn btn-primary") }}
+            </form>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-header">Existing Leave Types</div>
+        <div class="card-body">
+            {% if leave_types %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for leave_type in leave_types %}
+                    <tr>
+                        <td>{{ leave_type.id }}</td>
+                        <td>{{ leave_type.name }}</td>
+                        <td>
+                            <form method="POST" action="{{ url_for('delete_leave_type', leave_type_id=leave_type.id) }}" style="display:inline; "onsubmit="return confirm('Are you sure you want to delete the leave type: {{ leave_type.name }}? This cannot be undone.');">
+                                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">No leave types found.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

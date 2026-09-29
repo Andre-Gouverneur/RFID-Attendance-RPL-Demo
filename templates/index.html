@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h2>Current Staff Status</h2>
+
+    <div>
+<table class="table table-bordered table-striped mt-4">
+    <thead class="thead-dark">
+        <tr>
+            <th>Name</th>
+            <th>RFID UID</th>
+            <th>Status</th>
+            <th>Last Activity</th>
+        </tr>
+    </thead>
+    <tbody id="staffTableBody">
+        {% for s in staff %}
+        <tr class="{% if s.is_active == 0 %}table-secondary{% elif s.current_status == 'IN' %}table-success{% else %}table-danger{% endif %}">
+            <td>{{ s.name }}</td>
+            <td>{{ s.rfid_uid }}</td>
+            <td>
+                {% if s.is_active == 0 %}Disabled
+                {% elif s.current_status == 'IN' %}CHECKED IN
+                {% else %}CHECKED OUT
+                {% endif %}
+            </td>
+            <td>{{ s.last_activity_timestamp if s.last_activity_timestamp else 'N/A' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    // ... (your existing JavaScript code for updateDashboard and setInterval) ...
+</script>
+</body>
+</html>
+<script>
+    // Function to fetch and update dashboard data
+    async function updateDashboard() {
+        try {
+            const response = await fetch('/api/dashboard_data');
+            const staffData = await response.json();
+
+            const staffTableBody = document.getElementById('staffTableBody');
+            staffTableBody.innerHTML = ''; // Clear current table content
+
+            staffData.forEach(staff => {
+                const row = document.createElement('tr');
+                let statusClass = '';
+                let statusText = '';
+                let lastActivity = staff.last_activity_timestamp ? new Date(staff.last_activity_timestamp).toLocaleString() : 'N/A';
+
+                if (staff.is_active === 0) {
+                    statusClass = 'table-secondary'; // Gray for disabled
+                    statusText = 'Disabled';
+                    lastActivity = 'N/A'; // No activity tracking for disabled
+                } else if (staff.current_status === 'IN') {
+                    statusClass = 'table-success'; // Green for IN
+                    statusText = 'CHECKED IN';
+                } else { // status === 'OUT' or null
+                    statusClass = 'table-danger'; // Red for OUT
+                    statusText = 'CHECKED OUT';
+                }
+
+                row.className = statusClass;
+                row.innerHTML = `
+                    <td>${staff.name}</td>
+                    <td>${staff.rfid_uid}</td>
+                    <td>${statusText}</td>
+                    <td>${lastActivity}</td>
+                `;
+                staffTableBody.appendChild(row);
+            });
+
+            // Update the "Last Updated" timestamp on the page
+            const lastUpdatedSpan = document.getElementById('lastUpdated');
+            if (lastUpdatedSpan) {
+                lastUpdatedSpan.textContent = new Date().toLocaleTimeString();
+            }
+
+        } catch (error) {
+            console.error('Error fetching dashboard data:', error);
+            // Optionally show an error message on the page
+        }
+    }
+
+    // Run immediately when page loads
+    updateDashboard();
+
+    // Refresh every 3 seconds (adjust as needed)
+    setInterval(updateDashboard, 3000); // 3000 milliseconds = 3 seconds
+</script>
+
+            </tbody>
+        </table>
+    <p class="text-muted text-center mt-3">Last updated: <span id="lastUpdated"></span></p>
+    </div>
+
+    <p style="text-align: center; color: #666; font-size: 0.9em; margin-top: 20px;">
+        This view updates on page refresh.
+    </p>
+    {# Optional: Add a meta refresh for auto-update (e.g., every 30 seconds) #}
+    {# <meta http-equiv="refresh" content="30"> #}
+
+{% endblock %}

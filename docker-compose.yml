@@ -1,0 +1,56 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    command: gunicorn --bind 0.0.0.0:5000 "app:app" 
+    environment:
+      - FLASK_APP=app.py
+      - REDIS_URL=redis://redis:6379/0
+      - TZ=Africa/Johannesburg
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=rfid_db
+      - POSTGRES_USER=myuser
+      - POSTGRES_PASSWORD=mypassword
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+
+  redis:
+    image: redis:alpine
+
+  worker:
+    build: .
+    command: celery -A tasks worker --loglevel=info
+    environment:
+      - FLASK_APP=app.py
+      - REDIS_URL=redis://redis:6379/0
+      - TZ=Africa/Johannesburg
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+    
+  beat:
+    build: .
+    command: celery -A tasks beat --loglevel=info
+    environment:
+      - FLASK_APP=app.py
+      - REDIS_URL=redis://redis:6379/0
+      - TZ=Africa/Johannesburg
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - .:/app
+
+volumes:
+  postgres_data:
